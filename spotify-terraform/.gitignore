@@ -1,0 +1,35 @@
+# Ignore Terraform state files
+*.tfstate
+*.tfstate.*
+
+# Ignore Terraform crash logs
+crash.log
+
+# Ignore the override files and override.tfstate
+override.tf
+override.tf.json
+*.override.tf
+*.override.tf.json
+
+# Ignore .terraform directories (used by Terraform to store modules and provider plugins)
+.terraform/
+
+# Ignore backup files
+*.bak
+*.swp
+*~
+
+# Ignore sensitive or temporary files
+*.tfvars
+*.tfvars.json
+*.log
+
+# Ignore IDE or editor files
+.idea/
+.vscode/
+*.iml
+
+# Ignore any other file that shouldn't be version-controlled
+terraform.tfstate
+terraform.tfstate.backup
+

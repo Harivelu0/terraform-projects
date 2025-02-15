@@ -1,0 +1,33 @@
+
+name: PR Slack Notification
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+    branches:
+      - main
+      - master
+      - develop
+
+jobs:
+  notify-slack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: 'C086ULRTRFA'
+          slack-message: |
+            🔔 New Pull Request in *${{ github.repository }}*
+            
+            *Title:* ${{ github.event.pull_request.title }}
+            *Author:* ${{ github.event.pull_request.user.login }}
+            *Branch:* ${{ github.event.pull_request.head.ref }}
+            *Repository:* ${{ github.repository }}
+            
+            👉 <${{ github.event.pull_request.html_url }}|View Pull Request>
+            
+            *Description:*
+            ${{ github.event.pull_request.body || 'No description provided.' }}
+        env:
+          SLACK_TOKEN: ${{ secrets.SLACK_WORKSPACE_TOKEN }}
