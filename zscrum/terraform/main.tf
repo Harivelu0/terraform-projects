@@ -50,5 +50,9 @@ module "cdn" {
 
   app_name    = var.app_name
   environment = var.environment
-  depends_on = [module.ecs]
+
+  alb_dns_name = module.alb.alb_dns_name
+  alb_name     = module.alb.alb_name
+
+  depends_on = [module.alb]
 }

@@ -9,3 +9,8 @@ output "target_group_arn" {
 output "alb_security_group_id" {
   value = aws_security_group.alb.id
 }
+
+output "alb_name" {
+  description = "The name of the load balancer"
+  value       = aws_lb.main.name
+}

@@ -9,3 +9,12 @@ output "cloudfront_distribution_id" {
 output "cloudfront_domain_name" {
   value = aws_cloudfront_distribution.website.domain_name
 }
+output "cloudfront_domain_name" {
+  description = "Domain name of the CloudFront distribution"
+  value       = aws_cloudfront_distribution.web_app.domain_name
+}
+
+output "cloudfront_distribution_id" {
+  description = "ID of the CloudFront distribution"
+  value       = aws_cloudfront_distribution.web_app.id
+}
