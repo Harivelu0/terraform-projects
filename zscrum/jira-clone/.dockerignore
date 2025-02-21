@@ -1,0 +1,45 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Next.js build output
+.next
+out
+
+# Environment files
+.env*
+!.env.example
+
+# Version control
+.git
+.gitignore
+
+# IDE specific files
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage
+
+# Terraform files
+terraform
+*.tfstate
+*.tfvars
+
+# Docker files
+Dockerfile
+.dockerignore
+
+# Misc
+README.md
+*.log
+.npm
+.eslintcache
