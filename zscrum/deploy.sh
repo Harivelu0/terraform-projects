@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Deployment script for ZScrum Next.js application
+# Deployment script for Docker containerized Next.js application
+# This script also integrates with Terraform for infrastructure management
 
 # Get the environment from the command line
 ENV=$1
@@ -11,62 +12,82 @@ if [ -z "$ENV" ]; then
     exit 1
 fi
 
-echo "Deploying ZScrum Jira Clone to $ENV environment..."
+echo "Deploying $APP_NAME to $ENV environment..."
 
-# Create deployment directory if it doesn't exist
-DEPLOY_DIR="deploy_temp"
-mkdir -p $DEPLOY_DIR
+# Make sure required environment variables are set
+if [ -z "$DOCKER_IMAGE" ] || [ -z "$DOCKER_TAG" ]; then
+    echo "Error: Required environment variables not set"
+    echo "Please ensure DOCKER_IMAGE and DOCKER_TAG are defined"
+    exit 1
+fi
 
-# Extract the artifact to the deployment directory
-tar -xzf nextjs-app.tar.gz -C $DEPLOY_DIR
+# Function to deploy using Terraform
+deploy_with_terraform() {
+    local env=$1
+    
+    echo "Deploying to $env using Terraform..."
+    
+    # Change to terraform directory
+    cd terraform
+    
+    # Initialize Terraform
+    terraform init
+    
+    # Apply Terraform with variables
+    terraform apply \
+        -var="environment=$env" \
+        -var="docker_image=${DOCKER_IMAGE}:${DOCKER_TAG}" \
+        -var="database_url=${DATABASE_URL}" \
+        -var="clerk_secret_key=${CLERK_SECRET_KEY}" \
+        -var="clerk_publishable_key=${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}" \
+        -var-file="environments/$env/terraform.tfvars" \
+        -auto-approve
+    
+    # Return to original directory
+    cd ..
+}
+
+# Function to update ECS service
+update_ecs_service() {
+    local env=$1
+    local cluster="$APP_NAME-$env"
+    local service="$APP_NAME-service"
+    
+    echo "Updating ECS service in $env environment..."
+    
+    # Force new deployment of the ECS service
+    aws ecs update-service \
+        --cluster $cluster \
+        --service $service \
+        --force-new-deployment
+}
 
 case $ENV in
     dev)
-        # Development server deployment
-        echo "Deploying to development server..."
-        
-        # Example for Docker-based deployment (adjust as needed)
-        # cp jira-clone/Dockerfile $DEPLOY_DIR/
-        # cd $DEPLOY_DIR
-        # docker build -t zscrum:dev .
-        # docker stop zscrum-dev || true
-        # docker rm zscrum-dev || true
-        # docker run -d --name zscrum-dev -p 3000:3000 zscrum:dev
-        
-        # Alternative: Copy to server using SSH
-        # rsync -avz --delete $DEPLOY_DIR/ user@dev-server:/path/to/app/
-        # ssh user@dev-server "cd /path/to/app && npm install --production && pm2 restart zscrum-dev"
-        
+        # Development environment deployment
+        echo "Deploying to development environment..."
+        deploy_with_terraform dev
+        update_ecs_service dev
         echo "Development deployment completed"
         ;;
         
     staging)
-        # Staging server deployment
-        echo "Deploying to staging server..."
-        
-        # Example for Docker-based deployment
-        # cp jira-clone/Dockerfile $DEPLOY_DIR/
-        # cd $DEPLOY_DIR
-        # docker build -t zscrum:staging .
-        # docker stop zscrum-staging || true
-        # docker rm zscrum-staging || true
-        # docker run -d --name zscrum-staging -p 3001:3000 zscrum:staging
-        
+        # Staging environment deployment
+        echo "Deploying to staging environment..."
+        deploy_with_terraform staging
+        update_ecs_service staging
         echo "Staging deployment completed"
         ;;
         
     production)
-        # Production server deployment
-        echo "Deploying to production server..."
+        # Production environment deployment
+        echo "Deploying to production environment..."
+        deploy_with_terraform production
+        update_ecs_service production
         
-        # Example for AWS ECS deployment (if using the terraform in your repo)
-        # cp jira-clone/Dockerfile $DEPLOY_DIR/
-        # cd $DEPLOY_DIR
-        # aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin YOUR_AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
-        # docker build -t zscrum:latest .
-        # docker tag zscrum:latest YOUR_AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/zscrum:latest
-        # docker push YOUR_AWS_ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/zscrum:latest
-        # aws ecs update-service --cluster zscrum-cluster --service zscrum-service --force-new-deployment
+        # Tag the release in Git
+        git tag -a "release-${DOCKER_TAG}" -m "Production release ${DOCKER_TAG}"
+        git push origin "release-${DOCKER_TAG}"
         
         echo "Production deployment completed"
         ;;
@@ -76,9 +97,6 @@ case $ENV in
         exit 1
         ;;
 esac
-
-# Clean up deployment directory
-rm -rf $DEPLOY_DIR
 
 echo "Deployment to $ENV completed successfully!"
 exit 0
