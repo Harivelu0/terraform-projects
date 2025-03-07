@@ -39,7 +39,7 @@ pipeline {
             steps {
                 // Change to the jira-clone directory and install dependencies
                 dir('jira-clone') {
-                    sh 'npm ci'
+                    sh 'npm i'
                 }
             }
         }
