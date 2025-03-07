@@ -14,6 +14,7 @@ variable "key_pair_name" {
 variable "mongodb_uri" {
   description = "MongoDB URI for the application"
   type        = string
+  default = "${mongodb_uri}"
 }
 
 variable "jwt_secret" {

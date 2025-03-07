@@ -8,7 +8,7 @@ resource "aws_vpc" "notezipper_vpc" {
   enable_dns_support = true
 
   tags = {
-    Name="nodizipper-vpc"
+    Name="notezipper-vpc"
   }
 }
 #create subnet
@@ -18,14 +18,14 @@ resource "aws_subnet" "notezipper_subnet" {
   map_public_ip_on_launch = true
   availability_zone = "${var.aws_region}a"
   tags = {
-    Name="nodizipper-subnet"
+    Name="notezipper-subnet"
   }
 }
 #create internet gateway
 resource "aws_internet_gateway" "notezipper-igw" {
   vpc_id = aws_vpc.notezipper_vpc.id
   tags = {
-    Name="nodizipper-igw"
+    Name="notezipper-igw"
   }
 }
 # create route table
@@ -36,7 +36,7 @@ resource "aws_route_table" "notezipper_tr" {
     gateway_id = aws_internet_gateway.notezipper-igw.id
   }
 tags = {
-    Name="nodizipper-rt"
+    Name="notezipper-rt"
   }
 }
 # create route table association
