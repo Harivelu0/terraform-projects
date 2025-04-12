@@ -7,7 +7,13 @@
 
 */
 -- DropIndex
-DROP INDEX "User_clerkId_key";
+-- Check if the index exists before dropping it
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'User_clerkId_key') THEN
+    EXECUTE 'DROP INDEX "User_clerkId_key"';
+  END IF;
+END $$;
 
 -- AlterTable
 ALTER TABLE "User" DROP COLUMN "clerkId",

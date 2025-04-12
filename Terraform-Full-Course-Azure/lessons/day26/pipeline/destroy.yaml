@@ -1,0 +1,58 @@
+trigger: none
+
+parameters:
+- name: environment
+  type: string
+  values:
+  - dev
+  - staging
+  - prod
+  default: dev
+
+variables:
+  - group: terraform-secrets
+  - name: TERRAFORM_VERSION
+    value: '1.5.7'
+
+stages:
+- stage: Plan_Destroy
+  jobs:
+  - job: terraform_plan_destroy
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: TerraformInstaller@0
+      inputs:
+        terraformVersion: $(TERRAFORM_VERSION)
+    
+    - task: TerraformTaskV4@4
+      inputs:
+        provider: 'azurerm'
+        command: 'plan'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform/${{ parameters.environment }}'
+        environmentServiceNameAzureRM: 'Azure-Service-Connection'
+        commandOptions: '-destroy'
+        publishPlanResults: 'tfdestroy'
+
+- stage: Destroy
+  dependsOn: Plan_Destroy
+  condition: succeeded()
+  jobs:
+  - deployment: terraform_destroy
+    environment: ${{ parameters.environment }}
+    pool:
+      vmImage: 'ubuntu-latest'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: TerraformInstaller@0
+            inputs:
+              terraformVersion: $(TERRAFORM_VERSION)
+          
+          - task: TerraformTaskV4@4
+            inputs:
+              provider: 'azurerm'
+              command: 'destroy'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/terraform/${{ parameters.environment }}'
+              environmentServiceNameAzureRM: 'Azure-Service-Connection'

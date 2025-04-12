@@ -1,0 +1,84 @@
+# azure-pipelines.yml
+trigger:
+  branches:
+    include:
+    - main
+    - feature/*
+  paths:
+    include:
+    - terraform/*
+
+variables:
+  - group: terraform-secrets
+
+stages:
+- stage: Validate
+  jobs:
+  - job: terraform_validate
+    pool:
+      vmImage: 'ubuntu-latest'
+    steps:
+    - task: TerraformInstaller@0
+      inputs:
+        terraformVersion: '1.5.7'
+    
+    - task: TerraformTaskV4@4
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform/dev'
+        backendServiceArm: 'Azure-Service-Connection'
+        backendAzureRmResourceGroupName: 'terraform-state-rg'
+        backendAzureRmStorageAccountName: 'tfstatedev2024'
+        backendAzureRmContainerName: 'tfstate'
+        backendAzureRmKey: 'dev.terraform.tfstate'
+    
+    - task: TerraformTaskV4@4
+      inputs:
+        provider: 'azurerm'
+        command: 'validate'
+        workingDirectory: '$(System.DefaultWorkingDirectory)/terraform/dev'
+
+- stage: Dev_Deploy
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: terraform_apply_dev
+    environment: dev
+    pool:
+      vmImage: 'ubuntu-latest'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: TerraformInstaller@0
+            inputs:
+              terraformVersion: '1.5.7'
+          
+          - task: TerraformTaskV4@4
+            inputs:
+              provider: 'azurerm'
+              command: 'apply'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/terraform/dev'
+              environmentServiceNameAzureRM: 'Azure-Service-Connection'
+
+- stage: Test_Deploy
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - deployment: terraform_apply_test
+    environment: test
+    pool:
+      vmImage: 'ubuntu-latest'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: TerraformInstaller@0
+            inputs:
+              terraformVersion: '1.5.7'
+          
+          - task: TerraformTaskV4@4
+            inputs:
+              provider: 'azurerm'
+              command: 'apply'
+              workingDirectory: '$(System.DefaultWorkingDirectory)/terraform/test'
+              environmentServiceNameAzureRM: 'Azure-Service-Connection'
